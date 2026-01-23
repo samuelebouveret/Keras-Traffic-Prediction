@@ -49,6 +49,9 @@ class PredictTopo(Topo):
         switch2 = self.addSwitch("s2")
         switch3 = self.addSwitch("s3")
 
+        http = self.addHost("http")
+        self.addLink(http, switch3, **self.host_opts)
+
         for i in range(1, 4):
             host = self.addHost(f"h{i}")
             self.addLink(host, switch1, **self.host_opts)
