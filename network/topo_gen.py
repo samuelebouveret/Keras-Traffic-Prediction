@@ -60,7 +60,7 @@ class PredictTopo(Topo):
             host = self.addHost(f"h{i}")
             self.addLink(host, switch2, **self.host_opts)
 
-        # self.addLink(switch1, switch2, **switch_opts)
+        # self.addLink(switch1, switch2, **self.switch_opts)
 
         self.addLink(switch1, switch3, **self.switch_opts)
 
