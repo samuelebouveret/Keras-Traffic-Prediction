@@ -29,9 +29,9 @@ Keras-Traffic-Prediction
 │
 ├── network/                # Network package
 │   ├── __init__.py             # Python package initializer
+│   ├── ryu_controller.py       # Controller for switches and for logging
 │   ├── topo_gen.py             # Network topography generator
-│   ├── logger.py               # Data logger
-│   └── traffic_gen.py          # Traffic dependencies
+│   └── utils.py                # Generic functions and traffic generation for run_network
 │       
 ├── prediction/             # Model package
 │   ├── __init__.py             # Python package initializer

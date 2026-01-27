@@ -1,4 +1,3 @@
-
 from mininet.topo import Topo
 from mininet.net import Mininet
 from mininet.link import TCLink
@@ -49,8 +48,8 @@ class PredictTopo(Topo):
         switch2 = self.addSwitch("s2")
         switch3 = self.addSwitch("s3")
 
-        http = self.addHost("http")
-        self.addLink(http, switch3, **self.host_opts)
+        srv = self.addHost("srv")
+        self.addLink(srv, switch3, **self.host_opts)
 
         for i in range(1, 4):
             host = self.addHost(f"h{i}")
