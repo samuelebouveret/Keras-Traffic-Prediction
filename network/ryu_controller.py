@@ -1,8 +1,17 @@
+import time
+import csv
+
 from ryu.base import app_manager
 from ryu.controller import ofp_event
-from ryu.controller.handler import CONFIG_DISPATCHER, MAIN_DISPATCHER, set_ev_cls
+from ryu.controller.handler import (
+    CONFIG_DISPATCHER,
+    MAIN_DISPATCHER,
+    DEAD_DISPATCHER,
+    set_ev_cls,
+)
 from ryu.ofproto import ofproto_v1_3
 from ryu.lib.packet import ethernet, ether_types, packet
+from ryu.lib import hub
 
 
 class SimpleForwarding(app_manager.RyuApp):
@@ -11,10 +20,14 @@ class SimpleForwarding(app_manager.RyuApp):
     # Forza OpenFlow 1.3: deve combaciare con il protocollo degli switch OVS.
     OFP_VERSIONS = [ofproto_v1_3.OFP_VERSION]
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, target_dpid=3, *args, **kwargs):
         super().__init__(*args, **kwargs)
         # Tabella MAC -> porta, separata per ogni switch (datapath.id).
         self.mac_to_port = {}
+        self.datapaths = {}
+        self.target_dpid = target_dpid
+        self.previous_data = {}
+        self.monitor_thread = hub.spawn(self._monitor)
 
     def add_flow(self, datapath, priority, match, actions, buffer_id=None):
         # Installa una regola nella flow table dello switch.
@@ -32,10 +45,7 @@ class SimpleForwarding(app_manager.RyuApp):
             )
         else:
             mod = parser.OFPFlowMod(
-                datapath=datapath,
-                priority=priority,
-                match=match,
-                instructions=inst,
+                datapath=datapath, priority=priority, match=match, instructions=inst
             )
         datapath.send_msg(mod)
 
@@ -47,7 +57,9 @@ class SimpleForwarding(app_manager.RyuApp):
         parser = datapath.ofproto_parser
 
         match = parser.OFPMatch()
-        actions = [parser.OFPActionOutput(ofproto.OFPP_CONTROLLER, ofproto.OFPCML_NO_BUFFER)]
+        actions = [
+            parser.OFPActionOutput(ofproto.OFPP_CONTROLLER, ofproto.OFPCML_NO_BUFFER)
+        ]
         self.add_flow(datapath, 0, match, actions)
 
     @set_ev_cls(ofp_event.EventOFPPacketIn, MAIN_DISPATCHER)
@@ -103,3 +115,55 @@ class SimpleForwarding(app_manager.RyuApp):
             data=data,
         )
         datapath.send_msg(out)
+
+    # --------- LOGGING LOGIC ----------
+
+    @set_ev_cls(ofp_event.EventOFPStateChange, [MAIN_DISPATCHER, DEAD_DISPATCHER])
+    def _state_change_handler(self, ev):
+        datapath = ev.datapath
+        if ev.state == MAIN_DISPATCHER:
+            self.datapaths[datapath.id] = datapath
+        elif ev.state == DEAD_DISPATCHER:
+            self.datapaths.pop(datapath.id, None)
+
+    def _monitor(self):
+        while True:
+            if self.target_dpid in self.datapaths:
+                for dp in self.datapaths.values():
+                    self._request_stats(dp)
+            hub.sleep(2)
+
+    def _request_stats(self, datapath):
+        ofproto = datapath.ofproto
+        parser = datapath.ofproto_parser
+        req = parser.OFPPortStatsRequest(datapath, 0, ofproto.OFPP_ANY)
+        datapath.send_msg(req)
+
+    @set_ev_cls(ofp_event.EventOFPPortStatsReply, MAIN_DISPATCHER)
+    def port_stats_reply_handler(self, ev):
+        if ev.msg.datapath.id != self.target_dpid:
+            return
+        for stat in ev.msg.body:
+            # Bypass ryu controller port
+            if stat.port_no == 4294967294:
+                continue
+            key = stat.port_no
+            prev = self.previous_data.get(key)
+            if prev:
+                self.logger.info(f"Port stats for switch {ev.msg.datapath.id}")
+                timestamp = int(time.time())
+                delta_rx = stat.rx_bytes - prev.rx_bytes
+                delta_tx = stat.tx_bytes - prev.tx_bytes
+                delta_rx_pkts = stat.rx_packets - prev.rx_packets
+                delta_tx_pkts = stat.tx_packets - prev.tx_packets
+                row = [timestamp, stat.port_no, delta_rx, delta_tx, delta_rx_pkts, delta_tx_pkts]
+                self.logger.info(f"Port {stat.port_no}: rx={delta_rx} tx={delta_tx} "
+                      f"rx pkts={delta_rx_pkts} tx pkts={delta_tx_pkts} timestamp={timestamp}")
+            self.previous_data[key] = stat
+            self._write_csv(row)
+
+        
+
+    def _write_csv(self, row):
+        
+        pass

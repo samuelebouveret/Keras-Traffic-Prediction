@@ -44,9 +44,9 @@ class PredictTopo(Topo):
     def build(self):
         """Functon called at the end of __init__ from Topo class. It creates the actual topology of the network. """
 
-        switch1 = self.addSwitch("s1")
-        switch2 = self.addSwitch("s2")
-        switch3 = self.addSwitch("s3")
+        switch1 = self.addSwitch("s1", dpid="0000000000000001")
+        switch2 = self.addSwitch("s2", dpid="0000000000000002")
+        switch3 = self.addSwitch("s3" ,dpid="0000000000000003")
 
         srv = self.addHost("srv")
         self.addLink(srv, switch3, **self.host_opts)
