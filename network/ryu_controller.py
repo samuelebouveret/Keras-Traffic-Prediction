@@ -1,6 +1,7 @@
 import time
 import csv
 
+from ryu import cfg
 from ryu.base import app_manager
 from ryu.controller import ofp_event
 from ryu.controller.handler import (
@@ -20,14 +21,25 @@ class SimpleForwarding(app_manager.RyuApp):
     # Forza OpenFlow 1.3: deve combaciare con il protocollo degli switch OVS.
     OFP_VERSIONS = [ofproto_v1_3.OFP_VERSION]
 
-    def __init__(self, target_dpid=3, *args, **kwargs):
+    def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         # Tabella MAC -> porta, separata per ogni switch (datapath.id).
+        CONF = cfg.CONF
+        CONF.register_opts(
+            [cfg.IntOpt("target_dpid"), cfg.StrOpt("csv_path"), cfg.IntOpt("interval")]
+        )
+
         self.mac_to_port = {}
         self.datapaths = {}
-        self.target_dpid = target_dpid
+
+        self.interval = CONF.interval
+        self.target_dpid = CONF.target_dpid
+        self.csv_path = CONF.csv_path
         self.previous_data = {}
+
         self.monitor_thread = hub.spawn(self._monitor)
+
+    # --------- SWITCH LOGIC ---------
 
     def add_flow(self, datapath, priority, match, actions, buffer_id=None):
         # Installa una regola nella flow table dello switch.
@@ -116,7 +128,7 @@ class SimpleForwarding(app_manager.RyuApp):
         )
         datapath.send_msg(out)
 
-    # --------- LOGGING LOGIC ----------
+    # --------- LOGGING LOGIC ---------
 
     @set_ev_cls(ofp_event.EventOFPStateChange, [MAIN_DISPATCHER, DEAD_DISPATCHER])
     def _state_change_handler(self, ev):
@@ -127,43 +139,62 @@ class SimpleForwarding(app_manager.RyuApp):
             self.datapaths.pop(datapath.id, None)
 
     def _monitor(self):
+        # Enforces correct starting time to maintain clean intervals
+        interval = int(self.interval)
+        now = time.time()
+        next_tick = int(now) + (interval - (int(now) % interval))
+
         while True:
+            sleep_time = next_tick - time.time()
+            if sleep_time > 0:
+                hub.sleep(sleep_time)
+
             if self.target_dpid in self.datapaths:
                 for dp in self.datapaths.values():
-                    self._request_stats(dp)
-            hub.sleep(2)
-
-    def _request_stats(self, datapath):
-        ofproto = datapath.ofproto
-        parser = datapath.ofproto_parser
-        req = parser.OFPPortStatsRequest(datapath, 0, ofproto.OFPP_ANY)
-        datapath.send_msg(req)
+                    ofproto = dp.ofproto
+                    parser = dp.ofproto_parser
+                    req = parser.OFPPortStatsRequest(dp, 0, ofproto.OFPP_ANY)
+                    dp.send_msg(req)
+            next_tick += interval
 
     @set_ev_cls(ofp_event.EventOFPPortStatsReply, MAIN_DISPATCHER)
     def port_stats_reply_handler(self, ev):
+        # Bypass switches with different target_dpid
         if ev.msg.datapath.id != self.target_dpid:
             return
+
         for stat in ev.msg.body:
             # Bypass ryu controller port
             if stat.port_no == 4294967294:
                 continue
+
             key = stat.port_no
             prev = self.previous_data.get(key)
+
+            # Log and write data to csv
             if prev:
                 self.logger.info(f"Port stats for switch {ev.msg.datapath.id}")
+                csv_row = []
                 timestamp = int(time.time())
                 delta_rx = stat.rx_bytes - prev.rx_bytes
                 delta_tx = stat.tx_bytes - prev.tx_bytes
-                delta_rx_pkts = stat.rx_packets - prev.rx_packets
-                delta_tx_pkts = stat.tx_packets - prev.tx_packets
-                row = [timestamp, stat.port_no, delta_rx, delta_tx, delta_rx_pkts, delta_tx_pkts]
-                self.logger.info(f"Port {stat.port_no}: rx={delta_rx} tx={delta_tx} "
-                      f"rx pkts={delta_rx_pkts} tx pkts={delta_tx_pkts} timestamp={timestamp}")
+                delta_rx_packets = stat.rx_packets - prev.rx_packets
+                delta_tx_packets = stat.tx_packets - prev.tx_packets
+                csv_row = [
+                    timestamp,
+                    stat.port_no,
+                    delta_rx,
+                    delta_tx,
+                    delta_rx_packets,
+                    delta_tx_packets,
+                ]
+                self.logger.info(
+                    f"Port {stat.port_no}: RX Bytes={delta_rx} - TX Bytes={delta_tx} - RX Packets={delta_rx_packets} - TX Packets={delta_tx_packets} - Timestamp={timestamp}"
+                )
+                self._write_csv(csv_row)
             self.previous_data[key] = stat
-            self._write_csv(row)
-
-        
 
     def _write_csv(self, row):
-        
-        pass
+        with open(self.csv_path, "a", newline="") as file:
+            writer = csv.writer(file)
+            writer.writerow(row)

@@ -17,37 +17,33 @@ if PROJECT_ROOT not in sys.path:
 from network.utils import build_controller, generate_http_traffic
 from network.topo_gen import PredictTopo
 
-if not os.path.isdir("logs"):
-    os.mkdir("logs")
-if not os.path.isdir("data"):
-    os.mkdir("data")
+LOG_FOLDER = "logs/"
+LOG_FILENAME = "logs"
+DATA_FOLDER = "data/"
 
-out_logs = open("logs/out.logs", "w")
-err_logs = open("logs/err.logs", "w")
-in_logs = open("logs/in.logs", "w")
+if not os.path.isdir(LOG_FOLDER):
+    os.mkdir(LOG_FOLDER)
+if not os.path.isdir(DATA_FOLDER):
+    os.mkdir(DATA_FOLDER)
 
+out_logs = open(f"{LOG_FOLDER}{LOG_FILENAME}", "w")
 
 if __name__ == "__main__":
     try:
-        # TODO -- Remove unused logs files (in/out?)
-        controller_child = subprocess.Popen(
-            ["ryu-manager", "network/ryu_controller.py"],
-            stdout=out_logs,
-            stderr=err_logs,
-            stdin=in_logs,
+        controller_p = subprocess.Popen(
+            [
+                "ryu-manager",
+                "network/ryu_controller.py",
+                "--config-file",
+                "params.conf",
+            ],
+            stderr=out_logs,
         )
-        print(f"Started controller/logger process with PID {controller_child.pid}.")
+        print(f"Started ryu-manager process with PID {controller_p.pid}.")
 
         print("Creating network.")
         topo = PredictTopo()
-        net = Mininet(
-            topo=topo,
-            link=TCLink,
-            controller=None,
-            switch=OVSKernelSwitch,
-            # autoSetMacs=True,
-            # autoStaticArp=True,
-        )
+        net = Mininet(topo=topo, link=TCLink, controller=None, switch=OVSKernelSwitch)
         net.addController(**build_controller())
 
         print("Starting network.")
@@ -61,12 +57,20 @@ if __name__ == "__main__":
         CLI(net)
         print("Stopping network.")
         net.stop()
+        print("Execution ended succesfully.")
     finally:
-        print("Terminating ruy-manager process and cleaning mininet data.")
-        controller_child.terminate()
+        print(
+            "Terminating ruy-manager process, cleaning mininet data and closing log files."
+        )
+        controller_p.terminate()
+
+        try:
+            controller_p.wait(timeout=5)
+        except subprocess.TimeoutExpired:
+            controller_p.kill()
+            controller_p.wait()
+
+        out_logs.close()
         setLogLevel()
         cleanup()
-        in_logs.close()
-        err_logs.close()
-        out_logs.close()
-        print("Execution ended succesfully.")
+        print("Clenup end.")
