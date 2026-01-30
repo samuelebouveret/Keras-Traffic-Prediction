@@ -16,14 +16,15 @@ from ryu.lib import hub
 
 
 class SimpleForwarding(app_manager.RyuApp):
-    """Basic L2 learning switch for OpenFlow 1.3."""
+    """Basic L2 learning switch for OpenFlow 1.3 with logging implementation."""
 
     # Forza OpenFlow 1.3: deve combaciare con il protocollo degli switch OVS.
     OFP_VERSIONS = [ofproto_v1_3.OFP_VERSION]
 
     def __init__(self, *args, **kwargs):
+        """Ryu application initialization. It retrieves configuration from params.conf and spawns the monitoring thread."""
+
         super().__init__(*args, **kwargs)
-        # Tabella MAC -> porta, separata per ogni switch (datapath.id).
         CONF = cfg.CONF
         CONF.register_opts(
             [cfg.IntOpt("target_dpid"), cfg.StrOpt("csv_path"), cfg.IntOpt("interval")]
@@ -132,6 +133,8 @@ class SimpleForwarding(app_manager.RyuApp):
 
     @set_ev_cls(ofp_event.EventOFPStateChange, [MAIN_DISPATCHER, DEAD_DISPATCHER])
     def _state_change_handler(self, ev):
+        """Logs switch dpids on connection and removes on disconnection."""
+
         datapath = ev.datapath
         if ev.state == MAIN_DISPATCHER:
             self.datapaths[datapath.id] = datapath
@@ -139,7 +142,9 @@ class SimpleForwarding(app_manager.RyuApp):
             self.datapaths.pop(datapath.id, None)
 
     def _monitor(self):
-        # Enforces correct starting time to maintain clean intervals
+        """Thread starts in __init__, used to trigger event for logging at determined intervals."""
+
+        # Enforces correct starting time to maintain clean intervals.
         interval = int(self.interval)
         now = time.time()
         next_tick = int(now) + (interval - (int(now) % interval))
@@ -149,6 +154,7 @@ class SimpleForwarding(app_manager.RyuApp):
             if sleep_time > 0:
                 hub.sleep(sleep_time)
 
+            # Triggers event handler for data logging.
             if self.target_dpid in self.datapaths:
                 for dp in self.datapaths.values():
                     ofproto = dp.ofproto
@@ -157,21 +163,31 @@ class SimpleForwarding(app_manager.RyuApp):
                     dp.send_msg(req)
             next_tick += interval
 
+    # TODO -- Maybe add HTTP only packet filtering for specific data traffic prediction.
     @set_ev_cls(ofp_event.EventOFPPortStatsReply, MAIN_DISPATCHER)
     def port_stats_reply_handler(self, ev):
-        # Bypass switches with different target_dpid
+        """Event handler for data logging and csv writing. It only logs data on the target_dpid from params.conf 
+        inside logs/logs.logs file and inside the csv_path file.
+
+        Data is formatted into the csv as follows:
+            data = [timestamp, port_n, rx_bytes, tx_bytes, rx_packets,tx_packets]
+        where rx/tx data is a delta between the previous switch available data and the current (switch only has 
+        cumulative data on this tye of event).
+        """
+
+        # Bypass switches with different target_dpid.
         if ev.msg.datapath.id != self.target_dpid:
             return
 
         for stat in ev.msg.body:
-            # Bypass ryu controller port
+            # Bypass ryu controller port.
             if stat.port_no == 4294967294:
                 continue
 
             key = stat.port_no
             prev = self.previous_data.get(key)
 
-            # Log and write data to csv
+            # Log and write data to csv.
             if prev:
                 self.logger.info(f"Port stats for switch {ev.msg.datapath.id}")
                 csv_row = []
@@ -194,7 +210,14 @@ class SimpleForwarding(app_manager.RyuApp):
                 self._write_csv(csv_row)
             self.previous_data[key] = stat
 
+    # TODO -- Might want to change: with open keeps opening and closing 3 times per monitoring.
     def _write_csv(self, row):
+        """Writes a row of data into the cvs file with path from params.conf.
+
+        Args:
+            row (list): list of data to write.
+        """
+
         with open(self.csv_path, "a", newline="") as file:
             writer = csv.writer(file)
             writer.writerow(row)
