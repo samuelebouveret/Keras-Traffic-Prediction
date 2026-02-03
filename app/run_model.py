@@ -15,8 +15,6 @@ from oslo_config import cfg
 from prediction import TrafficModel
 from prediction import retrieve_csv, prepare_targets
 
-# TODO -- Add normalization
-
 CONF = cfg.CONF
 cfg.CONF.register_opts(
     [
@@ -27,20 +25,37 @@ cfg.CONF.register_opts(
         cfg.FloatOpt("training_slice"),
     ]
 )
-cfg.CONF(sys.argv[1:])
+CONF(default_config_files=["params.conf"])
 
 if __name__ == "__main__":
     print("Retrieving data and preparing targets.")
+    # Preprocessing, not normalized for debugging.
     data = retrieve_csv(CONF.csv_path)
-    predict, target = prepare_targets(data, CONF.sequence_length)
+    x, y = prepare_targets(data, CONF.sequence_length)
 
     print(
         f"Splitting data: training->{int(CONF.training_slice*100)}% - validation->{int((100-CONF.training_slice*100))}%."
     )
-    split = int(len(predict) * CONF.training_slice)
-    x_train, x_val = predict[:split], predict[split:]
-    y_train, y_val = target[:split], target[split:]
 
+    # Split x and why values according to params.conf.
+    split = int(len(x) * CONF.training_slice)
+    x_train, x_val = x[:split], x[split:]
+    y_train, y_val = y[:split], y[split:]
+
+    # Normalize x.
+    x_train_flat = x_train.reshape(-1, x_train.shape[-1])
+    x_mean = x_train_flat.mean(axis=0)
+    x_std  = x_train_flat.std(axis=0)
+    x_train= (x_train - x_mean) / x_std
+    x_val = (x_val - x_mean) / x_std
+
+    # Normalize y (no need to reshape).
+    y_mean = y_train.mean(axis=0)
+    y_std  = y_train.std(axis=0)
+    y_train = (y_train - y_mean) / y_std
+    y_val   = (y_val - y_mean) / y_std
+
+    # Initialize model and input.
     input = layers.Input(shape=(CONF.sequence_length, 12))
     model = TrafficModel()
     output = model(input)
