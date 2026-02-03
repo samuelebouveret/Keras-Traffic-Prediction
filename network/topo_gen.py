@@ -40,13 +40,13 @@ class PredictTopo(Topo):
 
         Topo.__init__(self)
 
-    # TODO -- Update docstring with final topology explanation.
     def build(self):
         """Functon called at the end of __init__ from Topo class. It creates the actual topology of the network. 
         
         h1,h2,h3 ---- s1--\ 
                            s3 ---- srv
         h4,h5,h6 ---- s2--/
+
 
         """
 

@@ -10,28 +10,38 @@ if PROJECT_ROOT not in sys.path:
 
 from keras import layers
 
+from oslo_config import cfg
+
 from prediction import TrafficModel
 from prediction import retrieve_csv, prepare_targets
 
 # TODO -- Add normalization
-# TODO -- Get file from params.conf and change other run / maybe create headers in run_network and remove header_false and columns_name
-csv_path = "data/dataset.csv"
-sequence_length = 5
-training_slice = 0.8
+
+CONF = cfg.CONF
+cfg.CONF.register_opts(
+    [
+        cfg.StrOpt("csv_path"),
+        cfg.IntOpt("epochs"),
+        cfg.IntOpt("batch_size"),
+        cfg.IntOpt("sequence_length"),
+        cfg.FloatOpt("training_slice"),
+    ]
+)
+cfg.CONF(sys.argv[1:])
 
 if __name__ == "__main__":
     print("Retrieving data and preparing targets.")
-    data = retrieve_csv(csv_path)
-    predict, target = prepare_targets(data, sequence_length)
+    data = retrieve_csv(CONF.csv_path)
+    predict, target = prepare_targets(data, CONF.sequence_length)
 
     print(
-        f"Splitting data: training->{int(training_slice*100)}% - validation->{int((100-training_slice*100))}%."
+        f"Splitting data: training->{int(CONF.training_slice*100)}% - validation->{int((100-CONF.training_slice*100))}%."
     )
-    split = int(len(predict) * 0.8)
+    split = int(len(predict) * CONF.training_slice)
     x_train, x_val = predict[:split], predict[split:]
     y_train, y_val = target[:split], target[split:]
 
-    input = layers.Input(shape=(sequence_length, 12))
+    input = layers.Input(shape=(CONF.sequence_length, 12))
     model = TrafficModel()
     output = model(input)
     model.summary()
@@ -41,6 +51,10 @@ if __name__ == "__main__":
     print("Training starting.")
     training_time = time.time()
     model.fit(
-        x_train, y_train, validation_data=(x_val, y_val), epochs=100, batch_size=32
+        x_train,
+        y_train,
+        validation_data=(x_val, y_val),
+        epochs=CONF.epochs,
+        batch_size=CONF.batch_size,
     )
     print(f"Training ended succesfully in {int(time.time()-training_time)}s")
