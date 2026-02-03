@@ -2,6 +2,7 @@ import os
 import sys
 import subprocess
 import argparse
+import csv
 
 from mininet.net import Mininet
 from mininet.node import OVSKernelSwitch
@@ -12,23 +13,24 @@ from mininet.log import setLogLevel
 
 PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 if PROJECT_ROOT not in sys.path:
-    # Allow "network" imports when running as a script from app/
     sys.path.insert(0, PROJECT_ROOT)
 
-from network.utils import build_controller
+from network.utils import build_controller, generate_http_traffic
 from network.topo_gen import PredictTopo
 from network.traffic_gen import run_traffic_scenario, run_training_session
 
 LOG_FOLDER = "logs/"
-LOG_FILENAME = "logs"
 DATA_FOLDER = "data/"
+HEADERS = ["timestamp", "port", "rx_bytes", "tx_bytes", "rx_packets", "tx_packets"]
 
 if not os.path.isdir(LOG_FOLDER):
     os.mkdir(LOG_FOLDER)
 if not os.path.isdir(DATA_FOLDER):
     os.mkdir(DATA_FOLDER)
 
-out_logs = open(f"{LOG_FOLDER}{LOG_FILENAME}", "w")
+out_logs = open(f"{LOG_FOLDER}logs.logs", "w")
+with open(f"{DATA_FOLDER}dataset.csv", mode="w", newline="") as file:
+    csv.writer(file).writerow(HEADERS)
 
 
 def parse_args():
@@ -58,7 +60,7 @@ def parse_args():
 
 if __name__ == "__main__":
     args = parse_args()
-    
+
     try:
         controller_p = subprocess.Popen(
             [
@@ -81,26 +83,31 @@ if __name__ == "__main__":
         setLogLevel("info")
 
         net.pingAll()
-
         if args.mode == "interactive":
             print("\n" + "=" * 50)
             print("INTERACTIVE MODE - Traffic commands available:")
             print("  py run_traffic_scenario(net, 60)")
             print("  py run_training_session(net, 120)")
             print("=" * 50 + "\n")
-            
+
             # Import into CLI namespace
-            from network.traffic_gen import run_traffic_scenario, run_training_session, TrafficGenerator
+            from network.traffic_gen import (
+                run_traffic_scenario,
+                run_training_session,
+                TrafficGenerator,
+            )
+
             CLI(net)
         else:
             print(f"\nAUTO MODE: Running traffic for {args.duration}s")
-            
+
             if args.training:
                 run_training_session(net, total_duration=args.duration)
             else:
                 run_traffic_scenario(net, duration=args.duration)
-            
+
             import time
+
             print(f"\nWaiting for traffic to complete...")
             time.sleep(10)  # Buffer for final traffic to finish
             print("Traffic generation completed.")

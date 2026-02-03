@@ -210,7 +210,6 @@ class SimpleForwarding(app_manager.RyuApp):
                 self._write_csv(csv_row)
             self.previous_data[key] = stat
 
-    # TODO -- Might want to change: with open keeps opening and closing 3 times per monitoring.
     def _write_csv(self, row):
         """Writes a row of data into the cvs file with path from params.conf.
 
