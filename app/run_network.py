@@ -1,7 +1,6 @@
 import os
 import sys
 import subprocess
-import argparse
 import csv
 
 from mininet.net import Mininet
@@ -15,7 +14,7 @@ PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 if PROJECT_ROOT not in sys.path:
     sys.path.insert(0, PROJECT_ROOT)
 
-from network.utils import build_controller, generate_http_traffic
+from network.utils import build_controller, parse_args, create_dirs
 from network.topo_gen import PredictTopo
 from network.traffic_gen import run_traffic_scenario, run_training_session
 
@@ -23,42 +22,8 @@ LOG_FOLDER = "logs/"
 DATA_FOLDER = "data/"
 HEADERS = ["timestamp", "port", "rx_bytes", "tx_bytes", "rx_packets", "tx_packets"]
 
-if not os.path.isdir(LOG_FOLDER):
-    os.mkdir(LOG_FOLDER)
-if not os.path.isdir(DATA_FOLDER):
-    os.mkdir(DATA_FOLDER)
-
-out_logs = open(f"{LOG_FOLDER}logs.logs", "w")
-with open(f"{DATA_FOLDER}dataset.csv", mode="w", newline="") as file:
-    csv.writer(file).writerow(HEADERS)
-
-
-def parse_args():
-    parser = argparse.ArgumentParser(
-        description="Run Mininet network with traffic generation for ML training"
-    )
-    parser.add_argument(
-        "--mode",
-        type=str,
-        choices=["interactive", "auto"],
-        default="interactive",
-        help="'interactive' opens CLI, 'auto' runs traffic and exits",
-    )
-    parser.add_argument(
-        "--duration",
-        type=int,
-        default=120,
-        help="Traffic duration in seconds (only in auto mode)",
-    )
-    parser.add_argument(
-        "--training",
-        action="store_true",
-        help="Use structured training session instead of random scenario",
-    )
-    return parser.parse_args()
-
-
 if __name__ == "__main__":
+    out_logs = create_dirs(LOG_FOLDER, DATA_FOLDER, HEADERS)
     args = parse_args()
 
     try:
