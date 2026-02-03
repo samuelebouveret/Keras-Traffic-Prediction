@@ -1,6 +1,7 @@
 import os
 import sys
 import subprocess
+import argparse
 
 from mininet.net import Mininet
 from mininet.node import OVSKernelSwitch
@@ -14,8 +15,9 @@ if PROJECT_ROOT not in sys.path:
     # Allow "network" imports when running as a script from app/
     sys.path.insert(0, PROJECT_ROOT)
 
-from network.utils import build_controller, generate_http_traffic
+from network.utils import build_controller
 from network.topo_gen import PredictTopo
+from network.traffic_gen import run_traffic_scenario, run_training_session
 
 LOG_FOLDER = "logs/"
 LOG_FILENAME = "logs"
@@ -28,7 +30,35 @@ if not os.path.isdir(DATA_FOLDER):
 
 out_logs = open(f"{LOG_FOLDER}{LOG_FILENAME}", "w")
 
+
+def parse_args():
+    parser = argparse.ArgumentParser(
+        description="Run Mininet network with traffic generation for ML training"
+    )
+    parser.add_argument(
+        "--mode",
+        type=str,
+        choices=["interactive", "auto"],
+        default="interactive",
+        help="'interactive' opens CLI, 'auto' runs traffic and exits",
+    )
+    parser.add_argument(
+        "--duration",
+        type=int,
+        default=120,
+        help="Traffic duration in seconds (only in auto mode)",
+    )
+    parser.add_argument(
+        "--training",
+        action="store_true",
+        help="Use structured training session instead of random scenario",
+    )
+    return parser.parse_args()
+
+
 if __name__ == "__main__":
+    args = parse_args()
+    
     try:
         controller_p = subprocess.Popen(
             [
@@ -52,15 +82,35 @@ if __name__ == "__main__":
 
         net.pingAll()
 
-        generate_http_traffic(net, port=8000, repeats=10)
+        if args.mode == "interactive":
+            print("\n" + "=" * 50)
+            print("INTERACTIVE MODE - Traffic commands available:")
+            print("  py run_traffic_scenario(net, 60)")
+            print("  py run_training_session(net, 120)")
+            print("=" * 50 + "\n")
+            
+            # Import into CLI namespace
+            from network.traffic_gen import run_traffic_scenario, run_training_session, TrafficGenerator
+            CLI(net)
+        else:
+            print(f"\nAUTO MODE: Running traffic for {args.duration}s")
+            
+            if args.training:
+                run_training_session(net, total_duration=args.duration)
+            else:
+                run_traffic_scenario(net, duration=args.duration)
+            
+            import time
+            print(f"\nWaiting for traffic to complete...")
+            time.sleep(10)  # Buffer for final traffic to finish
+            print("Traffic generation completed.")
 
-        CLI(net)
         print("Stopping network.")
         net.stop()
-        print("Execution ended succesfully.")
+        print("Execution ended successfully.")
     finally:
         print(
-            "Terminating ruy-manager process, cleaning mininet data and closing log files."
+            "Terminating ryu-manager process, cleaning mininet data and closing log files."
         )
         controller_p.terminate()
 
@@ -73,4 +123,4 @@ if __name__ == "__main__":
         out_logs.close()
         setLogLevel()
         cleanup()
-        print("Clenup end.")
+        print("Cleanup end.")
