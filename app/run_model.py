@@ -14,6 +14,8 @@ from oslo_config import cfg
 
 from prediction import TrafficModel
 from prediction import retrieve_csv, prepare_targets
+from prediction.utils import plot_loss, plot_predictions
+
 
 # TODO -- Add normalization
 
@@ -50,11 +52,19 @@ if __name__ == "__main__":
 
     print("Training starting.")
     training_time = time.time()
-    model.fit(
+    history = model.fit(
         x_train,
         y_train,
         validation_data=(x_val, y_val),
         epochs=CONF.epochs,
         batch_size=CONF.batch_size,
     )
+
+    # Generate plots
+    os.makedirs("plots", exist_ok=True)
+    plot_loss(history)
+    
+    predictions = model.predict(x_val)
+    plot_predictions(y_val[:, 0], predictions[:, 0])  # Plot first feature
+
     print(f"Training ended succesfully in {int(time.time()-training_time)}s")

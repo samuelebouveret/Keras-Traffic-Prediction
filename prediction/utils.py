@@ -1,6 +1,6 @@
 import pandas as pd
 import numpy as np
-
+import matplotlib.pyplot as plt
 
 def retrieve_csv(csv_path):
     """Retrieves the csv data
@@ -44,3 +44,32 @@ def prepare_targets(data, sequence_length):
         y.append(data[i + sequence_length])
 
     return np.array(x, dtype=np.float32), np.array(y, dtype=np.float32)
+
+def plot_loss(history, save_path="plots/loss.png"):
+    """Plot training and validation loss."""
+    plt.figure(figsize=(8, 5))
+    plt.plot(history.history["loss"], label="Train Loss")
+    plt.plot(history.history["val_loss"], label="Val Loss")
+    plt.xlabel("Epoch")
+    plt.ylabel("MSE Loss")
+    plt.title("Training vs Validation Loss")
+    plt.legend()
+    plt.grid(True)
+    plt.savefig(save_path)
+    plt.close()
+    print(f"Saved: {save_path}")
+
+
+def plot_predictions(y_true, y_pred, save_path="plots/predictions.png"):
+    """Plot actual vs predicted values."""
+    plt.figure(figsize=(10, 5))
+    plt.plot(y_true, label="Actual", marker="o", markersize=3)
+    plt.plot(y_pred, label="Predicted", marker="x", markersize=3)
+    plt.xlabel("Sample")
+    plt.ylabel("Traffic (normalized)")
+    plt.title("Actual vs Predicted Traffic")
+    plt.legend()
+    plt.grid(True)
+    plt.savefig(save_path)
+    plt.close()
+    print(f"Saved: {save_path}")
