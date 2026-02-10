@@ -3,7 +3,7 @@ from keras import layers
 
 
 class TrafficModel(tf.keras.Model):
-    """Defines the MiniYOLO model overriding __init__ and call functions as in Keras documentation."""
+    """LSTM model for network traffic prediction."""
 
     def __init__(self):
         """Defines the structure of the layers."""

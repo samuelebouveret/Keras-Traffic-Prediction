@@ -23,27 +23,39 @@ def retrieve_csv(csv_path):
     data.columns = [f"p{port}_{metric}" for metric, port in data.columns]
 
     data = data.reset_index()
+    data = data.dropna()
 
     return data
 
 
 def prepare_targets(data, sequence_length):
-    """Creates the x (input sequence) and the y (corresponding target) for the model.
-    The function also normalizes the data.
+    """Creates the x and the y for the model.
+    The data is normalized before creating the sequences.
 
     Args:
         data : Parsed csv file.
         sequence_length (int): Length of the sequence.
+
+    Returns:
+        tuple: (x, y) numpy arrays ready for the model.
     """
 
-    x, y = [], []
     data = data.drop(columns=["timestamp"])
-    data = data.to_numpy()
+    data = data.to_numpy(dtype=np.float32)
+
+    # Min-Max normalization to [0, 1]
+    dmin = data.min(axis=0)
+    dmax = data.max(axis=0)
+    drange = dmax - dmin
+    drange[drange == 0] = 1  # avoid division by zero
+    data = (data - dmin) / drange
+
+    x, y = [], []
     for i in range(len(data) - sequence_length):
         x.append(data[i : i + sequence_length])
         y.append(data[i + sequence_length])
 
-    return np.array(x, dtype=np.float32), np.array(y, dtype=np.float32)
+    return np.array(x), np.array(y)
 
 def plot_loss(history, save_path="plots/loss.png"):
     """Plot training and validation loss."""
@@ -73,3 +85,5 @@ def plot_predictions(y_true, y_pred, save_path="plots/predictions.png"):
     plt.savefig(save_path)
     plt.close()
     print(f"Saved: {save_path}")
+
+
