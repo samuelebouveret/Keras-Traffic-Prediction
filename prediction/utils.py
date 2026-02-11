@@ -124,7 +124,7 @@ def plot_predictions(y_true, y_pred, columns, save_dir="plots"):
             ax.grid(True)
 
         plt.tight_layout()
-        save_path = os.path.join(save_dir, f"predictions_port{port}.png")
+        save_path = os.path.join(save_dir, f"pred_port{port}.png")
         plt.savefig(save_path)
         plt.close()
         print(f"Saved: {save_path}")

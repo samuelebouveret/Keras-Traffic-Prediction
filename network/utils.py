@@ -24,7 +24,7 @@ def parse_args():
     parser.add_argument(
         "--training",
         action="store_true",
-        help="Use structured training session instead of random scenario",
+        help="Debug traffic generator",
     )
     return parser.parse_args()
 

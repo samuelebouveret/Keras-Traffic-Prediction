@@ -15,38 +15,54 @@ Follow the installation process from [ComNetsEmu Installation](https://git.comne
 Once connected to the machine, create a folder inside */home/vagrant* folder and copy the repository.
 ```bash
 git clone https://github.com/samuelebouveret/Keras-Traffic-Prediction.git
-```
 
-# TODO -- this is a temp structure
+cd keras-traffic-prediction/
+```
+- **Install dependencies**<br>
+Once inside the project root, install dependencies.
+```bash
+python3.8 -m pip install -r requirements.txt
+```
+When this is completed, the applicaton is ready to be executed.
+
 ## Code Structure
 ```
 Keras-Traffic-Prediction
 │
 ├── app/                    # Main scripts folder
 │   ├── run_network.py          # Network data collection
-│   ├── run_model.py            # Model training and prediction
-│   └── run_plotter.py          # Data plotter for analysis
+│   └── run_model.py            # Model training, prediction and plotting
 │
 ├── network/                # Network package
 │   ├── __init__.py             # Python package initializer
 │   ├── ryu_controller.py       # Controller for switches and for logging
 │   ├── topo_gen.py             # Network topography generator
-│   └── utils.py                # Generic functions and traffic generation for run_network
+│   ├── traffic_gen.py          # Network traffic generator
+│   └── utils.py                # Generic functions for directory setup, CLI and controller
 │       
 ├── prediction/             # Model package
 │   ├── __init__.py             # Python package initializer
 │   ├── model.py                # Model definition
-│   └── loss.py                 # Loss function definition
+│   └── utils.py                # Csv retrieval, target preparation and plotting functions
 │
-├── data/                   # Generated folder for training data
-│   ├── network_data1.csv
-│   ├── network_data2.csv   # Data from network .csv files
-│   └── ...
+├── data/                   # Generated folder for training data  
+│   └── dataset.csv             # Data from network .csv files (overwritten each run)
 │
-├── model/                  # Generated folder for trained models
-│   ├── model1.keras
-│   ├── model2.keras        # Finale .keras trained model files
-│   └── ...
+├── model/                  # Generated folder for .keras model
+│   └── traffic_model.keras     # Final trained model (not used in this project but still provided)
+│
+├── plots/                  # Generated folder for plots
+│   ├── loss.png                # Loss - val_loss plot
+│   ├── pred_port1.png          # Port 1 full prediction test
+│   ├── pred_port2.png          # Port 2 full prediction test
+│   └── pred_port3.png          # Port 3 full prediction test
+│
+├── logs/                   # Generated folder for network logs
+│   └── logs.logs               # Log file for network switch event
+│
+├── requirements.txt        # Dependencies
+│
+├── .gitignore
 │
 └── README.md               # This file
 ```
