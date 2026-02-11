@@ -85,47 +85,46 @@ def run_traffic_scenario(net: Mininet, duration: int = 60):
 
 def run_training_session(net: Mininet, total_duration: int = 120):
     """
-    Run a structured training session with distinct phases.
+    Run a structured training session with repeating cyclic phases.
     
-    Phases:
-    1. Low traffic 
-    2. Medium traffic 
-    3. High traffic 
-    4. Variable traffic 
+    The phases repeat multiple times so the LSTM can learn the pattern.
     """
     gen = TrafficGenerator(net)
     gen.start_servers()
 
-    phase_duration = total_duration // 4
-    print(f"Training session: {total_duration}s ({phase_duration}s per phase)")
+    # Shorter phases that repeat multiple cycles
+    cycle_duration = 40  # seconds per full cycle
+    num_cycles = total_duration // cycle_duration
+    phase_duration = cycle_duration // 4
 
-    # Phase 1: Low traffic
-    print("Low traffic")
-    for host in gen.hosts:
-        gen._iperf_client(host, duration=phase_duration, bandwidth="100K")
-    time.sleep(phase_duration)
+    print(f"Training session: {total_duration}s ({num_cycles} cycles, {phase_duration}s per phase)")
 
-    # Phase 2: Medium traffic  
-    print("Medium traffic")
-    for host in gen.hosts:
-        gen._iperf_client(host, duration=phase_duration, bandwidth="500K")
-        gen._http_burst(host, requests=5)
-    time.sleep(phase_duration)
+    for cycle in range(num_cycles):
+        print(f"--- Cycle {cycle + 1}/{num_cycles} ---")
 
-    # Phase 3: High traffic
-    print("High traffic")
-    for host in gen.hosts:
-        gen._iperf_client(host, duration=phase_duration, bandwidth="2M")
-    time.sleep(phase_duration)
+        # Phase 1: Low traffic
+        print("  Low traffic")
+        for host in gen.hosts:
+            gen._iperf_client(host, duration=phase_duration, bandwidth="100K")
+        time.sleep(phase_duration)
 
-    # Phase 4: Variable 
-    print("Variable traffic")
-    phase_start = time.time()
-    while time.time() - phase_start < phase_duration:
-        host = random.choice(gen.hosts)
-        bw = random.choice(["300K", "1M", "2M", "4M"])
-        gen._iperf_client(host, duration=3, bandwidth=bw)
-        gen._http_burst(host, requests=random.randint(2, 8))
-        time.sleep(random.uniform(2, 5))
+        # Phase 2: Medium traffic  
+        print("  Medium traffic")
+        for host in gen.hosts:
+            gen._iperf_client(host, duration=phase_duration, bandwidth="500K")
+            gen._http_burst(host, requests=5)
+        time.sleep(phase_duration)
+
+        # Phase 3: High traffic
+        print("  High traffic")
+        for host in gen.hosts:
+            gen._iperf_client(host, duration=phase_duration, bandwidth="2M")
+        time.sleep(phase_duration)
+
+        # Phase 4: Cooldown / transition
+        print("  Cooldown")
+        for host in gen.hosts:
+            gen._iperf_client(host, duration=phase_duration, bandwidth="200K")
+        time.sleep(phase_duration)
 
     print("Training session complete")

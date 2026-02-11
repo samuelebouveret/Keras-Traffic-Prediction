@@ -116,8 +116,8 @@ batch_size = 32
 # (INT) Sequence length for LSTM -> reducing might greatly reduce model performance
 sequence_length = 15
 
-# (FLOAT) Training/validation slice
-training_slice = 0.8
+# (FLOAT) Training slice (remaining is split equally into val and test)
+training_slice = 0.70
 ```
 ## Topology
 This is the topology used for the project, ports are strictly related to switch3.<br><br>

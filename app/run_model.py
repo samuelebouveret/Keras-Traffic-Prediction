@@ -36,14 +36,18 @@ if __name__ == "__main__":
     data = retrieve_csv(CONF.csv_path)
     x, y, norm_params = prepare_targets(data, CONF.sequence_length)
 
-    print(
-        f"Splitting data: training->{int(CONF.training_slice*100)}% - validation->{int((100-CONF.training_slice*100))}%."
-    )
+    # Three-way split: train / val / test (no shuffle — time series)
+    train_end = int(len(x) * CONF.training_slice)
+    val_end = int(len(x) * (1 - (1 - CONF.training_slice) / 2))
 
-    # Split x and y values according to params.conf.
-    split = int(len(x) * CONF.training_slice)
-    x_train, x_val = x[:split], x[split:]
-    y_train, y_val = y[:split], y[split:]
+    x_train, y_train = x[:train_end], y[:train_end]
+    x_val, y_val = x[train_end:val_end], y[train_end:val_end]
+    x_test, y_test = x[val_end:], y[val_end:]
+
+    train_pct = len(x_train) * 100 // len(x)
+    val_pct = len(x_val) * 100 // len(x)
+    test_pct = len(x_test) * 100 // len(x)
+    print(f"Split: train={train_pct}% ({len(x_train)}), val={val_pct}% ({len(x_val)}), test={test_pct}% ({len(x_test)})")
 
     # Initialize model and input.
     input = layers.Input(shape=(CONF.sequence_length, 12))
@@ -69,12 +73,17 @@ if __name__ == "__main__":
         callbacks=[early_stop],
     )
 
+    # Evaluate on test set
+    test_loss = model.evaluate(x_test, y_test, verbose=0)
+    print(f"Test loss (unseen data): {test_loss:.6f}")
+
     # Generate plots
     os.makedirs("plots", exist_ok=True)
     plot_loss(history)
 
-    predictions = model.predict(x_val)
-    plot_predictions(y_val, predictions, norm_params["columns"])
+    # Plot predictions on TEST set for an unbiased evaluation
+    test_predictions = model.predict(x_test)
+    plot_predictions(y_test, test_predictions, norm_params["columns"])
 
     # Save model
     os.makedirs(os.path.dirname(CONF.model_path), exist_ok=True)
