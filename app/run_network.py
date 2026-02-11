@@ -49,20 +49,19 @@ if __name__ == "__main__":
 
         net.pingAll()
         if args.mode == "interactive":
-            print("\n" + "=" * 50)
-            print("INTERACTIVE MODE - Traffic commands available:")
-            print("  py run_traffic_scenario(net, 60)")
-            print("  py run_training_session(net, 120)")
-            print("=" * 50 + "\n")
-
-            # Import into CLI namespace
             from network.traffic_gen import (
                 run_traffic_scenario,
                 run_training_session,
                 TrafficGenerator,
             )
 
-            CLI(net)
+            print("\n" + "=" * 50)
+            print("INTERACTIVE MODE - Traffic commands available:")
+            print("  py run_traffic_scenario(net, 60)")
+            print("  py run_training_session(net, 120)")
+            print("=" * 50 + "\n")
+
+            CLI(net, locals=locals())
         else:
             print(f"\nAUTO MODE: Running traffic for {args.duration}s")
 
