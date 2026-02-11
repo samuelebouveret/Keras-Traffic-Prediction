@@ -44,19 +44,6 @@ if __name__ == "__main__":
     x_train, x_val = x[:split], x[split:]
     y_train, y_val = y[:split], y[split:]
 
-    # Normalize x.
-    x_train_flat = x_train.reshape(-1, x_train.shape[-1])
-    x_mean = x_train_flat.mean(axis=0)
-    x_std  = x_train_flat.std(axis=0)
-    x_train= (x_train - x_mean) / x_std
-    x_val = (x_val - x_mean) / x_std
-
-    # Normalize y (no need to reshape).
-    y_mean = y_train.mean(axis=0)
-    y_std  = y_train.std(axis=0)
-    y_train = (y_train - y_mean) / y_std
-    y_val   = (y_val - y_mean) / y_std
-
     # Initialize model and input.
     input = layers.Input(shape=(CONF.sequence_length, 12))
     model = TrafficModel()

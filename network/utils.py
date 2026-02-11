@@ -3,8 +3,6 @@ import csv
 import os
 
 from mininet.node import RemoteController
-from mininet.node import Host
-from mininet.net import Mininet
 
 
 def build_controller():
