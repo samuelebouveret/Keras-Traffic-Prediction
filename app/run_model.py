@@ -9,6 +9,7 @@ if PROJECT_ROOT not in sys.path:
     sys.path.insert(0, PROJECT_ROOT)
 
 from keras import layers
+from keras.callbacks import EarlyStopping
 
 from oslo_config import cfg
 
@@ -54,12 +55,20 @@ if __name__ == "__main__":
 
     print("Training starting.")
     training_time = time.time()
+
+    early_stop = EarlyStopping(
+        monitor="val_loss",
+        patience=10,
+        restore_best_weights=True,
+    )
+
     history = model.fit(
         x_train,
         y_train,
         validation_data=(x_val, y_val),
         epochs=CONF.epochs,
         batch_size=CONF.batch_size,
+        callbacks=[early_stop],
     )
 
     # Generate plots
