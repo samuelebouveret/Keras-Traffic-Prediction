@@ -34,7 +34,7 @@ if __name__ == "__main__":
     print("Retrieving data and preparing targets.")
     # Preprocessing, not normalized for debugging.
     data = retrieve_csv(CONF.csv_path)
-    x, y = prepare_targets(data, CONF.sequence_length)
+    x, y, norm_params = prepare_targets(data, CONF.sequence_length)
 
     print(
         f"Splitting data: training->{int(CONF.training_slice*100)}% - validation->{int((100-CONF.training_slice*100))}%."
@@ -51,7 +51,7 @@ if __name__ == "__main__":
     output = model(input)
     model.summary()
 
-    model.compile(optimizer="adam", loss="mse", metrics=["mae"])
+    model.compile(optimizer="adam", loss="huber")
 
     print("Training starting.")
     training_time = time.time()
@@ -76,7 +76,7 @@ if __name__ == "__main__":
     plot_loss(history)
 
     predictions = model.predict(x_val)
-    plot_predictions(y_val[:, 0], predictions[:, 0])  # Plot first feature
+    plot_predictions(y_val, predictions, norm_params["columns"])
 
     # Save model
     os.makedirs(os.path.dirname(CONF.model_path), exist_ok=True)

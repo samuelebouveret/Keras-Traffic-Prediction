@@ -1,13 +1,12 @@
 import os
 import sys
 import subprocess
-import csv
+import time
 
 from mininet.net import Mininet
 from mininet.node import OVSKernelSwitch
 from mininet.clean import cleanup
 from mininet.link import TCLink
-from mininet.cli import CLI
 from mininet.log import setLogLevel
 
 PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -48,33 +47,16 @@ if __name__ == "__main__":
         setLogLevel("info")
 
         net.pingAll()
-        if args.mode == "interactive":
-            from network.traffic_gen import (
-                run_traffic_scenario,
-                run_training_session,
-                TrafficGenerator,
-            )
+        
+        print(f"\nRunning traffic for {args.duration}s")
 
-            print("\n" + "=" * 50)
-            print("INTERACTIVE MODE - Traffic commands available:")
-            print("  py run_traffic_scenario(net, 60)")
-            print("  py run_training_session(net, 120)")
-            print("=" * 50 + "\n")
-
-            CLI(net, locals=locals())
+        if args.training:
+            run_training_session(net, total_duration=args.duration)
         else:
-            print(f"\nAUTO MODE: Running traffic for {args.duration}s")
-
-            if args.training:
-                run_training_session(net, total_duration=args.duration)
-            else:
-                run_traffic_scenario(net, duration=args.duration)
-
-            import time
-
-            print(f"\nWaiting for traffic to complete...")
-            time.sleep(10)  # Buffer for final traffic to finish
-            print("Traffic generation completed.")
+            run_traffic_scenario(net, duration=args.duration)
+        print(f"\nWaiting for traffic to complete...")
+        time.sleep(10)  # Buffer for final traffic to finish
+        print("Traffic generation completed.")
 
         print("Stopping network.")
         net.stop()

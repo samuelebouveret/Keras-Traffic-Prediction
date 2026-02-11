@@ -16,13 +16,6 @@ def parse_args():
         description="Run Mininet network with traffic generation for ML training"
     )
     parser.add_argument(
-        "--mode",
-        type=str,
-        choices=["interactive", "auto"],
-        default="interactive",
-        help="'interactive' opens CLI, 'auto' runs traffic and exits",
-    )
-    parser.add_argument(
         "--duration",
         type=int,
         default=120,
