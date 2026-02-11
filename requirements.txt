@@ -22,8 +22,10 @@ colorama==0.4.3
 comnetsemu==0.3.1
 configobj==5.0.6
 constantly==15.1.0
+contourpy==1.1.1
 coverage==4.5.2
 cryptography==2.8
+cycler==0.12.1
 dbus-python==1.2.16
 debtcollector==2.0.0
 decorator==4.4.2
@@ -35,6 +37,7 @@ entrypoints==0.3
 eventlet==0.25.1
 flake8==3.7.9
 flatbuffers==25.12.19
+fonttools==4.57.0
 gast==0.4.0
 google-auth==2.47.0
 google-auth-oauthlib==1.0.0
@@ -48,6 +51,7 @@ hyperlink==19.0.0
 idna==2.8
 imagesize==1.4.1
 importlib_metadata==8.5.0
+importlib_resources==6.4.5
 incremental==16.10.1
 ipdb==0.12.2
 ipython==7.13.0
@@ -62,6 +66,7 @@ jsonschema==3.2.0
 kaptan==0.5.10
 keras==2.13.1
 keyring==18.0.1
+kiwisolver==1.4.7
 language-selector==0.1
 launchpadlib==1.10.13
 lazr.restfulclient==0.14.2
@@ -74,6 +79,7 @@ lxml==4.5.0
 Markdown==3.7
 markdown-it-py==3.0.0
 MarkupSafe==2.1.5
+matplotlib==3.7.5
 mccabe==0.6.1
 mdit-py-plugins==0.4.2
 mdurl==0.1.2
