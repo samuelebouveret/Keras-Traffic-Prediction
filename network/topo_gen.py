@@ -7,7 +7,7 @@ from mininet.cli import CLI
 
 
 class PredictTopo(Topo):
-    """Overrides __init__ and build functions as in mininet documentation, separating parameteres in __init__ from topology implementation in build for readability.
+    """Overrides __init__ and build functions as in mininet documentation, separating parameters in __init__ from topology implementation in build for readability.
     """
 
     def __init__(
@@ -42,7 +42,7 @@ class PredictTopo(Topo):
         Topo.__init__(self)
 
     def build(self):
-        """Functon called at the end of __init__ from Topo class. It creates the actual topology of the network. 
+        """Function called at the end of __init__ from Topo class. It creates the actual topology of the network. 
         
         h1,h2,h3 ---- s1--\ 
                            s3 ---- srv

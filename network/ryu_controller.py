@@ -206,7 +206,7 @@ class SimpleForwarding(app_manager.RyuApp):
             self.previous_data[key] = stat
 
     def _write_csv(self, row):
-        """Writes a row of data into the cvs file with path from params.conf.
+        """Writes a row of data into the csv file with path from params.conf.
 
         Args:
             row (list): list of data to write.
