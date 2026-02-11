@@ -1,8 +1,3 @@
-"""
-Simple traffic generator.
-Uses iperf (UDP) for sustained traffic and HTTP for bursty patterns.
-"""
-
 import random
 import time
 from mininet.net import Mininet

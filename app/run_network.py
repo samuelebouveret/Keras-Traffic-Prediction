@@ -22,9 +22,11 @@ DATA_FOLDER = "data/"
 HEADERS = ["timestamp", "port", "rx_bytes", "tx_bytes", "rx_packets", "tx_packets"]
 
 if __name__ == "__main__":
+    # Directory setup
     out_logs = create_dirs(LOG_FOLDER, DATA_FOLDER, HEADERS)
     args = parse_args()
 
+    # Start ryu controller as subprocess in parallel
     try:
         controller_p = subprocess.Popen(
             [
@@ -37,6 +39,7 @@ if __name__ == "__main__":
         )
         print(f"Started ryu-manager process with PID {controller_p.pid}.")
 
+        # Start network and run traffic
         print("Creating network.")
         topo = PredictTopo()
         net = Mininet(topo=topo, link=TCLink, controller=None, switch=OVSKernelSwitch)
@@ -46,16 +49,17 @@ if __name__ == "__main__":
         net.start()
         setLogLevel("info")
 
+        # Ping test
         net.pingAll()
-        
-        print(f"\nRunning traffic for {args.duration}s")
 
+        print(f"\nRunning traffic for {args.duration}s")
         if args.training:
             run_training_session(net, total_duration=args.duration)
         else:
             run_traffic_scenario(net, duration=args.duration)
+
         print(f"\nWaiting for traffic to complete...")
-        time.sleep(10)  # Buffer for final traffic to finish
+        time.sleep(10)
         print("Traffic generation completed.")
 
         print("Stopping network.")

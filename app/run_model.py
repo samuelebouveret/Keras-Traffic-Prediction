@@ -32,7 +32,7 @@ CONF(default_config_files=["params.conf"])
 
 if __name__ == "__main__":
     print("Retrieving data and preparing targets.")
-    # Preprocessing, not normalized for debugging.
+
     data = retrieve_csv(CONF.csv_path)
     x, y, norm_params = prepare_targets(data, CONF.sequence_length)
 
@@ -57,9 +57,7 @@ if __name__ == "__main__":
     training_time = time.time()
 
     early_stop = EarlyStopping(
-        monitor="val_loss",
-        patience=10,
-        restore_best_weights=True,
+        monitor="val_loss", patience=10, restore_best_weights=True
     )
 
     history = model.fit(

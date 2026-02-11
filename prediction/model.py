@@ -6,7 +6,9 @@ class TrafficModel(tf.keras.Model):
     """LSTM model for network traffic prediction."""
 
     def __init__(self):
-        """Defines the structure of the layers."""
+        """Defines the structure of the layers. Dropout is use to mitigate val_loss growing and 
+        overfitting (only in model.fit so inference is unaffected).
+        """
         super().__init__()
         self.lstm1 = layers.LSTM(128, return_sequences=True)
         self.dropout1 = layers.Dropout(0.3)

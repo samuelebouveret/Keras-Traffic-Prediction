@@ -4,6 +4,7 @@ import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 
+
 def retrieve_csv(csv_path):
     """Retrieves the csv data
 
@@ -62,6 +63,7 @@ def prepare_targets(data, sequence_length):
     norm_params = {"min": dmin, "max": dmax, "columns": columns}
     return np.array(x), np.array(y), norm_params
 
+
 def plot_loss(history, save_path="plots/loss.png"):
     """Plot training and validation loss."""
     plt.figure(figsize=(8, 5))
@@ -101,8 +103,20 @@ def plot_predictions(y_true, y_pred, columns, save_dir="plots"):
             col_idx = columns.index(col_name)
             ax = axes[idx // 2][idx % 2]
 
-            ax.plot(y_true[:, col_idx], label="Actual", marker="o", markersize=2, linewidth=1)
-            ax.plot(y_pred[:, col_idx], label="Predicted", marker="x", markersize=2, linewidth=1)
+            ax.plot(
+                y_true[:, col_idx],
+                label="Actual",
+                marker="o",
+                markersize=2,
+                linewidth=1,
+            )
+            ax.plot(
+                y_pred[:, col_idx],
+                label="Predicted",
+                marker="x",
+                markersize=2,
+                linewidth=1,
+            )
             ax.set_title(metric)
             ax.set_xlabel("Sample")
             ax.set_ylabel("Value (normalized)")
@@ -114,5 +128,3 @@ def plot_predictions(y_true, y_pred, columns, save_dir="plots"):
         plt.savefig(save_path)
         plt.close()
         print(f"Saved: {save_path}")
-
-
