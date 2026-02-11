@@ -3,6 +3,7 @@ from mininet.net import Mininet
 from mininet.link import TCLink
 from mininet.log import setLogLevel
 from mininet.clean import cleanup
+from mininet.cli import CLI 
 
 
 class PredictTopo(Topo):
@@ -81,6 +82,7 @@ def test_topology():
     net.start()
     print("Starting pingAll.")
     net.pingAll()
+    CLI(net)
     print("PingAll finished.")
     net.stop()
     print("Cleaning -> mn -c.")

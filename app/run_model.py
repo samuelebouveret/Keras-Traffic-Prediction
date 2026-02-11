@@ -40,7 +40,7 @@ if __name__ == "__main__":
         f"Splitting data: training->{int(CONF.training_slice*100)}% - validation->{int((100-CONF.training_slice*100))}%."
     )
 
-    # Split x and why values according to params.conf.
+    # Split x and y values according to params.conf.
     split = int(len(x) * CONF.training_slice)
     x_train, x_val = x[:split], x[split:]
     y_train, y_val = y[:split], y[split:]
@@ -81,4 +81,4 @@ if __name__ == "__main__":
     model.save(CONF.model_path)
     print(f"Model saved: {CONF.model_path}")
 
-    print(f"Training ended succesfully in {int(time.time()-training_time)}s")
+    print(f"Training ended successfully in {int(time.time()-training_time)}s")

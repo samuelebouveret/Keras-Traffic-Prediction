@@ -18,7 +18,6 @@ from ryu.lib import hub
 class SimpleForwarding(app_manager.RyuApp):
     """Basic L2 learning switch for OpenFlow 1.3 with logging implementation."""
 
-    # Forza OpenFlow 1.3: deve combaciare con il protocollo degli switch OVS.
     OFP_VERSIONS = [ofproto_v1_3.OFP_VERSION]
 
     def __init__(self, *args, **kwargs):
